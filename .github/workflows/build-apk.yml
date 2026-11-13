@@ -29,13 +29,6 @@ jobs:
         shell: bash
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
-          if [ ! -d "$ANDROID_HOME" ]; then
-            echo "::error::Android SDK nao encontrado"
-            exit 1
-          fi
-
           ls "$ANDROID_HOME/platforms"
 
       - name: Localizar projeto Android
@@ -54,14 +47,13 @@ jobs:
           fi
 
           DIR=$(dirname "$PROJECT")
-
           echo "dir=$DIR" >> "$GITHUB_OUTPUT"
           echo "Projeto encontrado em: $DIR"
 
-      - name: Configurar Gradle
+      - name: Configurar Gradle 8.11.1
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '8.11.1'
 
       - name: Compilar APK Debug
         shell: bash
@@ -70,20 +62,22 @@ jobs:
           echo "Iniciando compilacao do DEX Mobile"
 
           if [ -f ./gradlew ]; then
-            echo "Gradle Wrapper encontrado"
             chmod +x ./gradlew
+
+            if [ -f gradle/wrapper/gradle-wrapper.properties ]; then
+              sed -i \
+                's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-8.11.1-bin.zip|' \
+                gradle/wrapper/gradle-wrapper.properties
+            fi
 
             ./gradlew assembleDebug --stacktrace
 
           else
-            echo "Gradle Wrapper nao encontrado"
-            echo "Tentando gerar automaticamente"
+            echo "Gradle Wrapper ausente"
+            echo "Usando Gradle 8.11.1 instalado"
 
-            gradle wrapper --gradle-version 8.7
-
-            chmod +x ./gradlew
-
-            ./gradlew assembleDebug --stacktrace
+            gradle --version
+            gradle assembleDebug --stacktrace
           fi
 
       - name: Verificar APK gerado
