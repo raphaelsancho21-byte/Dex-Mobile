@@ -1,9 +1,0 @@
-{
-  "name":"dex-control-center", "version":"0.1.0", "private":true,
-  "description":"DEX Security - central de monitoramento Android na rede local",
-  "main":"main.js",
-  "scripts":{"start":"electron .","dist:win":"electron-builder --win portable"},
-  "dependencies":{"selfsigned":"^3.0.1"},
-  "devDependencies":{"electron":"^33.4.11","electron-builder":"^25.1.8"},
-  "build":{"appId":"com.dex.controlcenter","productName":"DEX Control Center","files":["main.js","preload.js","server.js","index.html","ui.js","package.json"],"win":{"target":"portable"}}
-}
