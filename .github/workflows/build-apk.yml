@@ -4,10 +4,15 @@ name: Build DEX Mobile APK
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Compilar DEX Mobile
     runs-on: ubuntu-latest
 
     steps:
@@ -21,9 +26,16 @@ jobs:
           java-version: '17'
 
       - name: Verificar Android SDK
+        shell: bash
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          if [ ! -d "$ANDROID_HOME" ]; then
+            echo "::error::Android SDK nao encontrado"
+            exit 1
+          fi
+
           ls "$ANDROID_HOME/platforms"
 
       - name: Localizar projeto Android
@@ -37,31 +49,56 @@ jobs:
             \) -print -quit)
 
           if [ -z "$PROJECT" ]; then
-            echo "::error::Projeto Gradle nao encontrado"
+            echo "::error::Projeto Android nao encontrado"
             exit 1
           fi
 
           DIR=$(dirname "$PROJECT")
-          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
 
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
           echo "Projeto encontrado em: $DIR"
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
       - name: Compilar APK Debug
         shell: bash
         working-directory: ${{ steps.project.outputs.dir }}
         run: |
-          if [ ! -f ./gradlew ]; then
-            echo "::error::Gradle Wrapper nao encontrado"
-            exit 1
+          echo "Iniciando compilacao do DEX Mobile"
+
+          if [ -f ./gradlew ]; then
+            echo "Gradle Wrapper encontrado"
+            chmod +x ./gradlew
+
+            ./gradlew assembleDebug --stacktrace
+
+          else
+            echo "Gradle Wrapper nao encontrado"
+            echo "Tentando gerar automaticamente"
+
+            gradle wrapper --gradle-version 8.7
+
+            chmod +x ./gradlew
+
+            ./gradlew assembleDebug --stacktrace
           fi
 
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+      - name: Verificar APK gerado
+        shell: bash
+        run: |
+          echo "Procurando APK..."
 
-      - name: Publicar APK
+          find DEX-Security-V0.1 \
+            -type f -name "*.apk" -print
+
+      - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
           name: DEX-Mobile-Debug
-          path: "**/build/outputs/apk/debug/*.apk"
+          path: |
+            DEX-Security-V0.1/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
