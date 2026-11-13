@@ -1,0 +1,9 @@
+{
+  "name": "dex-qr-pairing-pc",
+  "version": "0.2.0",
+  "private": true,
+  "description": "DEX local QR pairing demonstration for PC and Android",
+  "scripts": {"start": "node server.js"},
+  "dependencies": {"qrcode": "^1.5.4"},
+  "engines": {"node": ">=20"}
+}
