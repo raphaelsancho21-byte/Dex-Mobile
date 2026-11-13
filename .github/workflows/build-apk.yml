@@ -1,0 +1,59 @@
+
+name: Build DEX Mobile APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Encontrar projeto Android
+        id: project
+        shell: bash
+        run: |
+          PROJECT=$(find DEX-Security-V0.1 \
+            -name settings.gradle \
+            -o -name settings.gradle.kts \
+            | head -n 1)
+
+          if [ -z "$PROJECT" ]; then
+            echo "Projeto Android Gradle nao encontrado."
+            exit 1
+          fi
+
+          DIR=$(dirname "$PROJECT")
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar APK
+        shell: bash
+        run: |
+          cd "${{ steps.project.outputs.dir }}"
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            gradle assembleDebug
+          fi
+
+      - name: Disponibilizar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DEX-Mobile-APK
+          path: "**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
